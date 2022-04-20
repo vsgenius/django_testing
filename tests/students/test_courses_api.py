@@ -26,7 +26,10 @@ def course_factory():
 @pytest.mark.django_db
 def test_first_course(client,course):
     response = client.get(f'/courses/?name={course.name}')
+    assert response.status_code == 200
+    assert response.json()[0]['id'] == course.id
     assert response.json()[0]['name'] == course.name
+    assert response.json()[0]['students'] == list(course.students.all())
 
 
 @pytest.mark.django_db
