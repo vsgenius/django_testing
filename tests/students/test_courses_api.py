@@ -11,11 +11,6 @@ def client():
 
 
 @pytest.fixture()
-def course():
-    return Course.objects.create(name='1')
-
-
-@pytest.fixture()
 def course_factory():
     def factory(*args,**kwargs):
         return baker.make(Course,*args,**kwargs)
@@ -24,12 +19,14 @@ def course_factory():
 
 
 @pytest.mark.django_db
-def test_first_course(client,course):
-    response = client.get(f'/courses/?name={course.name}')
+def test_first_course(client,course_factory):
+    courses = course_factory(_quantity=10)
+    response = client.get(f'/courses/{courses[0].id}/')
+    data = response.json()
     assert response.status_code == 200
-    assert response.json()[0]['id'] == course.id
-    assert response.json()[0]['name'] == course.name
-    assert response.json()[0]['students'] == list(course.students.all())
+    assert data['id'] == courses[0].id
+    assert data['name'] == courses[0].name
+    assert data['students'] == list(courses[0].students.all())
 
 
 @pytest.mark.django_db
@@ -45,12 +42,12 @@ def test_list_course(client,course_factory):
 
 @pytest.mark.django_db
 def test_filter_course_id(client,course_factory):
-    courses_id = course_factory(_quantity=10)
-    print(type(courses_id))
-    response = client.get(f'/courses/?id={courses_id[0].id}')
+    courses = course_factory(_quantity=10)
+    response = client.get(f'/courses/?id={courses[0].id}')
     assert response.status_code == 200
     data = response.json()
-    assert data[0]['id'] == courses_id[0].id
+    assert data[0]['id'] == courses[0].id
+
 
 
 
@@ -71,8 +68,9 @@ def test_create_course(client):
 
 
 @pytest.mark.django_db
-def test_update_course(client, course):
-    response = client.patch(f'/courses/{course.id}/',
+def test_update_course(client, course_factory):
+    courses = course_factory(_quantity=10)
+    response = client.patch(f'/courses/{courses[0].id}/',
                             data={'name': '2'})
     assert response.status_code == 200
     data = response.json()
@@ -80,6 +78,7 @@ def test_update_course(client, course):
 
 
 @pytest.mark.django_db
-def test_delete_course(client, course):
-    response = client.delete(f'/courses/{course.id}/')
+def test_delete_course(client, course_factory):
+    courses = course_factory(_quantity=10)
+    response = client.delete(f'/courses/{courses[0].id}/')
     assert response.status_code == 204
